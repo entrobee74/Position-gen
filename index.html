@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Receipt Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        @media (max-width: 968px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .form-section, .receipt-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        h1, h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        h1 {
+            font-size: 24px;
+        }
+
+        h2 {
+            font-size: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .trade-entry {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .trade-entry h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #667eea;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button.remove-btn {
+            background: #ef4444;
+            margin-top: 10px;
+        }
+
+        button.remove-btn:hover {
+            background: #dc2626;
+        }
+
+        button.add-btn {
+            background: #10b981;
+        }
+
+        button.add-btn:hover {
+            background: #059669;
+        }
+
+        /* Receipt Styles */
+        .receipt {
+            background: white;
+            min-height: 400px;
+        }
+
+        .receipt-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+
+        .receipt-nav {
+            display: flex;
+            gap: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .receipt-nav span.active {
+            color: #000;
+            font-weight: 600;
+        }
+
+        .trade-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .trade-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .trade-symbol {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .trade-type {
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .trade-type.sell {
+            color: #ef4444;
+        }
+
+        .trade-type.buy {
+            color: #3b82f6;
+        }
+
+        .trade-profit {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .trade-profit.positive {
+            color: #10b981;
+        }
+
+        .trade-profit.negative {
+            color: #ef4444;
+        }
+
+        .trade-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .summary {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 14px;
+        }
+
+        .summary-row.total {
+            font-weight: 700;
+            font-size: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #e0e0e0;
+            margin-top: 8px;
+        }
+
+        .export-btn {
+            background: #8b5cf6;
+            margin-top: 20px;
+        }
+
+        .export-btn:hover {
+            background: #7c3aed;
+        }
+
+        #receiptCanvas {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="form-section">
+            <h1>Trading Receipt Generator</h1>
+            
+            <div id="tradesContainer"></div>
+            
+            <button class="add-btn" onclick="addTrade()">+ Add Trade</button>
+            
+            <div class="form-group" style="margin-top: 30px;">
+                <label>Commission</label>
+                <input type="number" id="commission" value="-20.00" step="0.01">
+            </div>
+
+            <button onclick="generateReceipt()">Generate Receipt</button>
+        </div>
+
+        <div class="receipt-section">
+            <h2>Preview</h2>
+            <div class="receipt" id="receipt">
+                <div class="receipt-header">
+                    <div style="font-size: 20px;">☰</div>
+                    <div class="receipt-nav">
+                        <span class="active">Positionen</span>
+                        <span>Order</span>
+                        <span>Deals</span>
+                    </div>
+                    <div style="font-size: 20px;">🕐</div>
+                </div>
+                <div id="receiptContent">
+                    <p style="text-align: center; color: #999; padding: 40px 0;">Add trades to generate receipt</p>
+                </div>
+            </div>
+            <button class="export-btn" onclick="exportReceipt()">📥 Download as Image</button>
+        </div>
+    </div>
+
+    <canvas id="receiptCanvas"></canvas>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script>
+        let trades = [];
+        let tradeCounter = 0;
+
+        function addTrade() {
+            const tradeId = tradeCounter++;
+            trades.push({
+                id: tradeId,
+                symbol: 'XAUUSD.raw',
+                type: 'buy',
+                quantity: 1,
+                entryPrice: 0,
+                exitPrice: 0,
+                timestamp: new Date().toISOString()
+            });
+            renderTrades();
+        }
+
+        function removeTrade(id) {
+            trades = trades.filter(t => t.id !== id);
+            renderTrades();
+            generateReceipt();
+        }
+
+        function updateTrade(id, field, value) {
+            const trade = trades.find(t => t.id === id);
+            if (trade) {
+                if (field === 'quantity' || field === 'entryPrice' || field === 'exitPrice') {
+                    trade[field] = parseFloat(value) || 0;
+                } else {
+                    trade[field] = value;
+                }
+            }
+        }
+
+        function renderTrades() {
+            const container = document.getElementById('tradesContainer');
+            container.innerHTML = trades.map((trade, index) => `
+                <div class="trade-entry">
+                    <h3>Trade ${index + 1}</h3>
+                    <div class="form-group">
+                        <label>Symbol</label>
+                        <input type="text" value="${trade.symbol}" 
+                               onchange="updateTrade(${trade.id}, 'symbol', this.value); generateReceipt()">
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select onchange="updateTrade(${trade.id}, 'type', this.value); generateReceipt()">
+                                <option value="buy" ${trade.type === 'buy' ? 'selected' : ''}>Buy</option>
+                                <option value="sell" ${trade.type === 'sell' ? 'selected' : ''}>Sell</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" value="${trade.quantity}" step="1"
+                                   onchange="updateTrade(${trade.id}, 'quantity', this.value); generateReceipt()">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="form-group">
+                            <label>Entry Price</label>
+                            <input type="number" value="${trade.entryPrice}" step="0.01"
+                                   onchange="updateTrade(${trade.id}, 'entryPrice', this.value); generateReceipt()">
+                        </div>
+                        <div class="form-group">
+                            <label>Exit Price</label>
+                            <input type="number" value="${trade.exitPrice}" step="0.01"
+                                   onchange="updateTrade(${trade.id}, 'exitPrice', this.value); generateReceipt()">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Timestamp</label>
+                        <input type="datetime-local" value="${new Date(trade.timestamp).toISOString().slice(0, 16)}"
+                               onchange="updateTrade(${trade.id}, 'timestamp', new Date(this.value).toISOString()); generateReceipt()">
+                    </div>
+                    <button class="remove-btn" onclick="removeTrade(${trade.id})">Remove Trade</button>
+                </div>
+            `).join('');
+        }
+
+        function calculateProfit(trade) {
+            if (trade.type === 'buy') {
+                return (trade.exitPrice - trade.entryPrice) * trade.quantity * 100;
+            } else {
+                return (trade.entryPrice - trade.exitPrice) * trade.quantity * 100;
+            }
+        }
+
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const seconds = String(date.getSeconds()).padStart(2, '0');
+            return `${year}.${month}.${day} ${hours}:${minutes}:${seconds}`;
+        }
+
+        function generateReceipt() {
+            if (trades.length === 0) {
+                document.getElementById('receiptContent').innerHTML = 
+                    '<p style="text-align: center; color: #999; padding: 40px 0;">Add trades to generate receipt</p>';
+                return;
+            }
+
+            const commission = parseFloat(document.getElementById('commission').value) || 0;
+            let totalProfit = 0;
+
+            const tradesHTML = trades.map(trade => {
+                const profit = calculateProfit(trade);
+                totalProfit += profit;
+                const profitClass = profit >= 0 ? 'positive' : 'negative';
+                const typeClass = trade.type === 'buy' ? 'buy' : 'sell';
+
+                return `
+                    <div class="trade-item">
+                        <div class="trade-item-header">
+                            <div>
+                                <span class="trade-symbol">${trade.symbol}</span>
+                                <span class="trade-type ${typeClass}">${trade.type} ${trade.quantity}</span>
+                            </div>
+                            <div class="trade-profit ${profitClass}">${profit.toFixed(2)}</div>
+                        </div>
+                        <div class="trade-details">
+                            <span>${trade.entryPrice.toFixed(2)} → ${trade.exitPrice.toFixed(2)}</span>
+                            <span>${formatDateTime(trade.timestamp)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            const balance = totalProfit + commission;
+
+            const summaryHTML = `
+                <div class="summary">
+                    <div class="summary-row">
+                        <span>Einzahlung</span>
+                        <span>0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Profit</span>
+                        <span>${totalProfit.toFixed(2)}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Swap</span>
+                        <span>0.00</span>
+                    </div>
+                    <div class="summary-row">
+                        <span>Kommission</span>
+                        <span>${commission.toFixed(2)}</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span>Kontostand</span>
+                        <span>${balance.toFixed(2)}</span>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('receiptContent').innerHTML = tradesHTML + summaryHTML;
+        }
+
+        function exportReceipt() {
+            const receipt = document.getElementById('receipt');
+            
+            html2canvas(receipt, {
+                scale: 2,
+                backgroundColor: '#ffffff',
+                logging: false,
+                windowWidth: receipt.scrollWidth,
+                windowHeight: receipt.scrollHeight
+            }).then(canvas => {
+                // Convert canvas to blob
+                canvas.toBlob(blob => {
+                    // Create download link
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `trading-receipt-${new Date().getTime()}.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                });
+            });
+        }
+
+        // Initialize with one trade
+        addTrade();
+        renderTrades();
+    </script>
+</body>
+</html>
